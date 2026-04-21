@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exploratorul Universului — Atestat Informatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#05091a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Exploratorul Universului">
+</head>
+
+<body>
+    <div id="loading-screen">
+        <canvas id="loadCanvas"></canvas>
+        <div class="loader-content">
+            <div class="loader-planet-wrap">
+                <div class="loader-planet"></div>
+                <div class="loader-ring"></div>
+                <div class="loader-moon"></div>
+            </div>
+            <div class="loader-title">EXPLORATORUL UNIVERSULUI</div>
+            <div class="loader-sub">Sistem educational interactiv &bull; Atestat informatica</div>
+            <div class="loader-bar-bg">
+                <div class="loader-bar-fill" id="loaderFill"></div>
+            </div>
+            <div class="loader-msg" id="loaderMsg">Initializare...</div>
+        </div>
+    </div>
+    <div id="readBar"></div>
+    <canvas id="bgCanvas"></canvas>
+    <div class="neb neb1"></div>
+    <div class="neb neb2"></div>
+    <div class="neb neb3"></div>
+    <div class="neb neb4"></div>
+    <div id="toastWrap"></div>
+    <div id="kbModal" class="modal-overlay" style="display:none">
+        <div class="modal-box glass">
+            <div class="modal-hdr">
+                <h3><i class="fas fa-keyboard"></i> Scurtaturi tastatura</h3>
+                <button class="modal-close" id="kbClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="kb-grid">
+                <div class="kb-row"><kbd>D</kbd><span>Dashboard</span></div>
+                <div class="kb-row"><kbd>L</kbd><span>Lectii</span></div>
+                <div class="kb-row"><kbd>Q</kbd><span>Quiz</span></div>
+                <div class="kb-row"><kbd>T</kbd><span>Schimba tema</span></div>
+                <div class="kb-row"><kbd>S</kbd><span>Toggle sunet</span></div>
+                <div class="kb-row"><kbd>F</kbd><span>Fapt cosmic nou</span></div>
+                <div class="kb-row"><kbd>?</kbd><span>Scurtaturi tastatura</span></div>
+                <div class="kb-row"><kbd>&#8592;</kbd><kbd>&#8594;</kbd><span>Navigheaza lectii</span></div>
+                <div class="kb-row"><kbd>ESC</kbd><span>Inapoi / Inchide</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="app-wrapper">
+        <nav class="navbar glass" id="navbar">
+            <div class="nav-brand">
+                <div class="brand-icon"><i class="fas fa-rocket"></i></div>
+                <div class="brand-text">
+                    <span class="brand-main">EXPLORATORUL</span>
+                    <span class="brand-sub">UNIVERSULUI</span>
+                </div>
+            </div>
+            <div class="nav-search">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Cauta in univers...">
+                    <button id="searchBtn"><i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+            <div class="nav-tools">
+                <button class="tool-btn" id="soundBtn" title="Sunet"><i class="fas fa-volume-up"></i></button>
+                <button class="tool-btn" id="themeBtn" title="Tema"><i class="fas fa-moon"></i></button>
+                <div class="theme-picker" id="themePicker">
+                    <button class="tpick active" data-theme="dark" title="Dark">🌑</button>
+                    <button class="tpick" data-theme="light" title="Light">☀️</button>
+                    <button class="tpick" data-theme="nebula" title="Nebula">🌌</button>
+                    <button class="tpick" data-theme="aurora" title="Aurora">🌿</button>
+                    <button class="tpick" data-theme="mars" title="Marte">🔴</button>
+                </div>
+                <button class="tool-btn" id="kbBtn" title="Scurtaturi"><i class="fas fa-keyboard"></i></button>
+            </div>
+            <div class="nav-links" id="navLinks">
+                <button class="nav-btn active" data-page="dashboard"><i
+                        class="fas fa-chart-pie"></i><span>Dashboard</span></button>
+                <button class="nav-btn" data-page="carte"><i class="fas fa-book-open"></i><span>Lectii</span></button>
+                <button class="nav-btn" data-page="misiuni"><i class="fas fa-bullseye"></i><span>Misiuni</span></button>
+                <button class="nav-btn" data-page="quiz"><i class="fas fa-star"></i><span>Quiz</span></button>
+                <button class="nav-btn" data-page="realizari"><i
+                        class="fas fa-trophy"></i><span>Realizari</span></button>
+                <button class="nav-btn" data-page="jurnal"><i class="fas fa-book"></i><span>Jurnal</span></button>
+                <button class="nav-btn" data-page="despre"><i class="fas fa-id-card"></i><span>Despre</span></button>
+                <button class="nav-btn" data-page="calculator"><i
+                        class="fas fa-calculator"></i><span>Calculator</span></button>
+                <button class="nav-btn" data-page="comparator"><i
+                        class="fas fa-scale-balanced"></i><span>Comparator</span></button>
+                <button class="nav-btn" data-page="cer"><i class="fas fa-star-of-david"></i><span>Cer
+                        Noapte</span></button>
+                <button class="nav-btn" data-page="harta"><i class="fas fa-circle-nodes"></i><span>Harta</span></button>
+            </div>
+        </nav>
+        <main>
+            <!-- DASHBOARD -->
+            <div class="page active" id="page-dashboard">
+                <div class="dashboard-grid">
+                    <div class="hero-card glass">
+                        <div class="hero-left">
+                            <div class="hero-badge"><i class="fas fa-satellite-dish"></i> Sistem activ</div>
+                            <h1 class="hero-title" id="heroTitle"></h1>
+                            <p class="hero-sub">Universul ascunde <strong>miliarde de secrete</strong>. Exploreaza cele
+                                <strong>12 lectii</strong> ale acestui ghid si devino un adevarat expert cosmic.
+                            </p>
+                            <div class="hero-btns">
+                                <button class="btn-glow pulse" id="continueBtn"><i class="fas fa-binoculars"></i>
+                                    Continua explorarea</button>
+                                <button class="btn-outline" id="quizQuickBtn"><i class="fas fa-bolt"></i> Quiz
+                                    rapid</button>
+                                <button class="btn-random" id="randomLessonBtn"><i class="fas fa-shuffle"></i> Lectie
+                                    aleatorie</button>
+                            </div>
+                        </div>
+                        <div class="hero-right">
+                            <div class="solar-anim">
+                                <div class="sa-sun"><i class="fas fa-sun"></i></div>
+                                <div class="sa-orbit o1">
+                                    <div class="sa-planet p1"></div>
+                                </div>
+                                <div class="sa-orbit o2">
+                                    <div class="sa-planet p2"></div>
+                                </div>
+                                <div class="sa-orbit o3">
+                                    <div class="sa-planet p3"></div>
+                                </div>
+                                <div class="sa-orbit o4">
+                                    <div class="sa-planet p4"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dash-card glass prog-card">
+                        <div class="dc-title"><i class="fas fa-chart-line"></i> Progres global</div>
+                        <div class="ring-wrap">
+                            <svg class="ring-svg" viewBox="0 0 140 140">
+                                <defs>
+                                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#FFD966" />
+                                        <stop offset="100%" stop-color="#7c5cff" />
+                                    </linearGradient>
+                                </defs>
+                                <circle class="ring-track" cx="70" cy="70" r="56" />
+                                <circle class="ring-fill-svg" id="ringFillSvg" cx="70" cy="70" r="56" />
+                            </svg>
+                            <div class="ring-center">
+                                <div class="ring-pct" id="ringPct">0%</div>
+                                <div class="ring-lbl">complet</div>
+                            </div>
+                        </div>
+                        <div class="prog-stats"><span id="progDone">0 finalizate</span><span id="progLeft">12
+                                ramase</span></div>
+                        <div class="lesson-dots" id="lessonDots"></div>
+                    </div>
+                    <div class="dash-card glass">
+                        <div class="dc-title"><i class="fas fa-flag-checkered"></i> Misiuni</div>
+                        <div class="big-num" id="missionNum">0</div>
+                        <div class="big-lbl">completate din 12</div>
+                        <div class="dash-badge" id="dashBadge"></div>
+                        <button class="btn-sm" id="goMissions"><i class="fas fa-arrow-right"></i> Vezi toate</button>
+                    </div>
+                    <div class="fact-card glass">
+                        <div class="dc-title"><i class="fas fa-lightbulb"></i> Fapt Cosmic</div>
+                        <div class="fact-counter" id="factCounter">1 / 12</div>
+                        <div class="fact-icon-big" id="factIconEl"><i class="fas fa-sun"></i></div>
+                        <p class="fact-text" id="factText">Se incarca...</p>
+                        <div class="fact-nav">
+                            <button class="fact-btn" id="prevFact"><i class="fas fa-chevron-left"></i></button>
+                            <button class="fact-btn" id="nextFact"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-item glass"><i class="fas fa-book-open" style="color:#FFD966"></i>
+                            <div class="stat-val" id="stLectii">0</div>
+                            <div class="stat-lbl">Lectii</div>
+                        </div>
+                        <div class="stat-item glass"><i class="fas fa-brain" style="color:#7c5cff"></i>
+                            <div class="stat-val" id="stQuiz">--</div>
+                            <div class="stat-lbl">Scor max</div>
+                        </div>
+                        <div class="stat-item glass"><i class="fas fa-clock" style="color:#00e5ff"></i>
+                            <div class="stat-val" id="stTime">0 min</div>
+                            <div class="stat-lbl">Studiu</div>
+                        </div>
+                        <div class="stat-item glass"><i class="fas fa-trophy" style="color:#2ecc71"></i>
+                            <div class="stat-val" id="stBadge">0</div>
+                            <div class="stat-lbl">Badge-uri</div>
+                        </div>
+                    </div>
+                    <div class="recent-card glass">
+                        <div class="dc-title"><i class="fas fa-history"></i> Lectii recente</div>
+                        <div class="recent-list" id="recentList"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- CARTE -->
+            <div class="page" id="page-carte">
+                <div class="page-card glass">
+                    <div class="page-hdr">
+                        <div class="page-hdr-icon"><i class="fas fa-atlas"></i></div>
+                        <div>
+                            <h2>Carte Cosmica</h2>
+                            <p>12 capitole despre secretele universului</p>
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <button class="chip active" data-f="all">Toate <span id="cAll">12</span></button>
+                        <button class="chip" data-f="done">Finalizate <span id="cDone">0</span></button>
+                        <button class="chip" data-f="todo">Necitite <span id="cTodo">12</span></button>
+                        <button class="chip" data-f="easy">&#x1F7E2; Incepator</button>
+                        <button class="chip" data-f="med">&#x1F7E1; Intermediar</button>
+                        <button class="chip" data-f="hard">&#x1F534; Avansat</button>
+                    </div>
+                    <div class="lessons-grid" id="lessonsGrid"></div>
+                </div>
+            </div>
+            <div id="lessonPagesWrap"></div>
+            <!-- MISIUNI -->
+            <div class="page" id="page-misiuni">
+                <div class="page-card glass">
+                    <div class="page-hdr">
+                        <div class="page-hdr-icon"><i class="fas fa-bullseye"></i></div>
+                        <div>
+                            <h2>Misiuni Active</h2>
+                            <p>Completeaza toate pentru titlul de <span class="gold-text">Explorator Stelar</span></p>
+                        </div>
+                    </div>
+                    <div class="mbar-wrap">
+                        <div class="mbar-fill" id="mbarFill"></div>
+                    </div>
+                    <div class="mbar-label" id="mbarLabel">0 / 12</div>
+                    <ul class="mission-list" id="missionList"></ul>
+                    <div class="mission-reward glass">
+                        <i class="fas fa-crown" style="font-size:2rem;color:#FFD966"></i>
+                        <div><strong>Recompensa finala:</strong> Badge exclusiv de <span class="gold-text">Explorator
+                                Stelar</span></div>
+                    </div>
+                </div>
+            </div>
+            <!-- QUIZ -->
+            <div class="page" id="page-quiz">
+                <div class="page-card glass" id="quizCard">
+                    <div id="quizIntro">
+                        <div class="quiz-intro-wrap">
+                            <div class="quiz-trophy"><i class="fas fa-trophy"></i></div>
+                            <h2>Quiz Cosmic</h2>
+                            <p>Testeaza-ti cunostintele din cele 12 lectii. Raspunde la <strong>10 intrebari</strong>
+                                aleatoare si castiga badge-ul de <strong>Explorator Cosmic</strong>!</p>
+                            <div class="quiz-rules">
+                                <div class="qrule"><i class="fas fa-shuffle" style="color:#7c5cff"></i> 10 intrebari din
+                                    54</div>
+                                <div class="qrule"><i class="fas fa-clock" style="color:#FFD966"></i> 30 sec per
+                                    intrebare</div>
+                                <div class="qrule"><i class="fas fa-trophy" style="color:#2ecc71"></i> 100% = badge
+                                    exclusiv</div>
+                                <div class="qrule"><i class="fas fa-eye" style="color:#00e5ff"></i> Explicatii dupa
+                                    raspuns</div>
+                            </div>
+                            <div class="quiz-prev-score" id="quizPrevScore"></div>
+                            <button class="btn-glow large" id="startQuizBtn"><i class="fas fa-play"></i> Lanseaza
+                                Quiz-ul</button>
+                        </div>
+                    </div>
+                    <div id="quizActive" style="display:none">
+                        <div class="qa-top">
+                            <div class="qa-prog-bar">
+                                <div class="qa-prog-fill" id="qaFill"></div>
+                            </div>
+                            <div class="qa-meta">
+                                <span>Intrebarea <strong id="qNum">1</strong> / 10</span>
+                                <span class="qa-score-live">&#9733; <strong id="qScore">0</strong> pts</span>
+                                <span class="qa-timer-wrap" id="qTimerWrap"><i class="fas fa-clock"></i> <strong
+                                        id="qTimer">30</strong>s</span>
+                            </div>
+                        </div>
+                        <div class="timer-bar-wrap">
+                            <div class="timer-bar" id="timerBar"></div>
+                        </div>
+                        <div class="qa-question" id="qaQuestion"></div>
+                        <div class="qa-options" id="qaOptions"></div>
+                        <div class="qa-feedback" id="qaFeedback"></div>
+                        <div class="qa-explain" id="qaExplain"></div>
+                        <div class="qa-foot"><button class="btn-glow" id="nextQBtn" style="display:none"><i
+                                    class="fas fa-arrow-right"></i> Continua</button></div>
+                    </div>
+                    <div id="quizResult" style="display:none">
+                        <div class="qr-wrap">
+                            <div class="qr-badge" id="qrBadge"></div>
+                            <h2 id="qrTitle"></h2>
+                            <p id="qrSub"></p>
+                            <div class="qr-score-circle"><span id="qrPts">0</span><small>/ 100 pts</small></div>
+                            <div class="qr-breakdown" id="qrBreakdown"></div>
+                            <div class="qr-btns">
+                                <button class="btn-glow" id="retryBtn"><i class="fas fa-redo"></i> Incearca din
+                                    nou</button>
+                                <button class="btn-outline" id="reviewBtn"><i class="fas fa-list"></i>
+                                    Recapitulare</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="quizReview" style="display:none">
+                        <div class="review-hdr">
+                            <button class="btn-outline sm" id="backToResult"><i class="fas fa-arrow-left"></i>
+                                Rezultat</button>
+                            <h3>Recapitulare raspunsuri</h3>
+                        </div>
+                        <div id="reviewList"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- REALIZARI -->
+            <div class="page" id="page-realizari">
+                <div class="page-card glass">
+                    <div class="page-hdr">
+                        <div class="page-hdr-icon"><i class="fas fa-trophy"></i></div>
+                        <div>
+                            <h2>Realizari si Badge-uri</h2>
+                            <p>Colectioneaza toate badge-urile!</p>
+                        </div>
+                    </div>
+                    <div class="achievements-grid" id="achievementsGrid"></div>
+                </div>
+            </div>
+            <!-- JURNAL -->
+            <div class="page" id="page-jurnal">
+                <div class="page-card glass">
+                    <div class="page-hdr">
+                        <div class="page-hdr-icon"><i class="fas fa-book"></i></div>
+                        <div>
+                            <h2>Jurnal de Bord</h2>
+                            <p>Activitatea ta cosmica inregistrata pas cu pas</p>
+                        </div>
+                    </div>
+                    <div class="journal-summary" id="journalSummary"></div>
+                    <div class="timeline-wrap" id="timeline"></div>
+                    <div class="resources-section">
+                        <h3><i class="fas fa-external-link-alt"></i> Resurse recomandate</h3>
+                        <div class="res-grid">
+                            <a href="https://www.nasa.gov" target="_blank" class="res-card"><i class="fas fa-rocket"
+                                    style="color:#fc3d21"></i>
+                                <div><strong>NASA</strong><small>nasa.gov</small></div><i
+                                    class="fas fa-external-link-alt res-arr"></i>
+                            </a>
+                            <a href="https://www.esa.int" target="_blank" class="res-card"><i class="fas fa-satellite"
+                                    style="color:#4488ff"></i>
+                                <div><strong>ESA</strong><small>esa.int</small></div><i
+                                    class="fas fa-external-link-alt res-arr"></i>
+                            </a>
+                            <a href="https://hubblesite.org" target="_blank" class="res-card"><i class="fas fa-eye"
+                                    style="color:#FFD966"></i>
+                                <div><strong>Hubble Site</strong><small>hubblesite.org</small></div><i
+                                    class="fas fa-external-link-alt res-arr"></i>
+                            </a>
+                            <a href="https://www.spacex.com" target="_blank" class="res-card"><i
+                                    class="fas fa-space-shuttle" style="color:#aaa"></i>
+                                <div><strong>SpaceX</strong><small>spacex.com</small></div><i
+                                    class="fas fa-external-link-alt res-arr"></i>
+                            </a>
+                            <a href="https://www.eso.org" target="_blank" class="res-card"><i class="fas fa-star"
+                                    style="color:#7c5cff"></i>
+                                <div><strong>ESO</strong><small>eso.org</small></div><i
+                                    class="fas fa-external-link-alt res-arr"></i>
+                            </a>
+                            <a href="https://science.nasa.gov/solar-system" target="_blank" class="res-card"><i
+                                    class="fas fa-circle-dot" style="color:#00e5ff"></i>
+                                <div><strong>NASA Solar System</strong><small>science.nasa.gov</small></div><i
+                                    class="fas fa-external-link-alt res-arr"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DESPRE -->
+            <div class="page" id="page-despre">
+                <div class="page-card glass despre-card">
+                    <div class="despre-avatar">🚀</div>
+                    <div class="despre-name" id="despreNume">Exploratorul Universului</div>
+                    <div class="despre-sub" id="despreSub">Proiect atestat informatică · 2025-2026</div>
+                    <div class="despre-info-grid">
+                        <div class="di-item">
+                            <div class="di-label">Elev</div>
+                            <div class="di-val" id="di-elev">Gașpar Daniel Cătălin</div>
+                        </div>
+                        <div class="di-item">
+                            <div class="di-label">Clasa</div>
+                            <div class="di-val" id="di-clasa">12D</div>
+                        </div>
+                        <div class="di-item">
+                            <div class="di-label">Școală</div>
+                            <div class="di-val" id="di-scoala">Liceul Teoretic "Traian Lalescu" Orșova</div>
+                        </div>
+                        <div class="di-item">
+                            <div class="di-label">Profesor coordonator</div>
+                            <div class="di-val" id="di-prof">Papavă Gabi</div>
+                        </div>
+                        <div class="di-item">
+                            <div class="di-label">Materia</div>
+                            <div class="di-val">Informatică</div>
+                        </div>
+                        <div class="di-item">
+                            <div class="di-label">An școlar</div>
+                            <div class="di-val">2025 — 2026</div>
+                        </div>
+                    </div>
+                    <div class="despre-desc">
+                        <strong style="color:var(--gold)">Exploratorul Universului</strong> este o aplicație web
+                        educațională interactivă dedicată astronomiei și explorării spațiale. Conține <strong>12 lecții
+                            enciclopedice</strong>,
+                        un <strong>quiz cu 54 de întrebări</strong>, sistem de realizări, jurnal de activitate și multe
+                        altele.
+                        Proiectul a fost realizat folosind <em>HTML5, CSS3 și JavaScript</em> pur,
+                        demonstrând concepte de programare web precum manipularea DOM-ului, localStorage, Canvas API și
+                        animații CSS.
+                    </div>
+                    <div style="margin-bottom:.8rem;font-size:.75rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.1em">
+                        Tehnologii folosite</div>
+                    <div class="despre-tech">
+                        <span class="tech-tag">HTML5</span>
+                        <span class="tech-tag">CSS3</span>
+                        <span class="tech-tag">JavaScript ES6+</span>
+                        <span class="tech-tag">Canvas API</span>
+                        <span class="tech-tag">Web Audio API</span>
+                        <span class="tech-tag">localStorage</span>
+                        <span class="tech-tag">CSS Animations</span>
+                        <span class="tech-tag">Responsive Design</span>
+                        <span class="tech-tag">Font Awesome 6</span>
+                        <span class="tech-tag">Google Fonts</span>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="page" id="page-calculator">
+                <div class="page-card glass">
+                    <div class="page-hdr">
+                        <div class="page-hdr-icon"><i class="fas fa-calculator"></i></div>
+                        <div>
+                            <h2>Calculator Cosmic</h2>
+                            <p>Descopera cat de diferit ar fi viata ta in spatiu!</p>
+                        </div>
+                    </div>
+                    <div class="calc-grid" id="calcGrid"></div>
+                </div>
+            </div>
+
+            <!-- COMPARATOR PAGE -->
+            <div class="page" id="page-comparator">
+                <div class="page-card glass">
+                    <div class="page-hdr">
+                        <div class="page-hdr-icon"><i class="fas fa-scale-balanced"></i></div>
+                        <div>
+                            <h2>Comparator Planete</h2>
+                            <p>Alege doua planete si compara-le direct</p>
+                        </div>
+                    </div>
+                    <div class="comp-selectors">
+                        <div class="comp-sel-wrap">
+                            <label class="comp-sel-label">Planeta 1</label>
+                            <select class="comp-select" id="compSel1"></select>
+                        </div>
+                        <div class="comp-vs">VS</div>
+                        <div class="comp-sel-wrap">
+                            <label class="comp-sel-label">Planeta 2</label>
+                            <select class="comp-select" id="compSel2"></select>
+                        </div>
+                    </div>
+                    <div id="compResult"></div>
+                </div>
+            </div>
+
+            <!-- CER DE NOAPTE PAGE -->
+            <div class="page" id="page-cer">
+                <div class="page-card glass cer-card">
+                    <div class="page-hdr">
+                        <div class="page-hdr-icon"><i class="fas fa-star-of-david"></i></div>
+                        <div>
+                            <h2>Cer de Noapte</h2>
+                            <p>Constelatiile principale vizibile de pe teritoriul Romaniei</p>
+                        </div>
+                    </div>
+                    <div class="cer-controls">
+                        <button class="chip active" data-const="all">Toate</button>
+                        <button class="chip" data-const="zodiac">Zodiac</button>
+                        <button class="chip" data-const="north">Nord</button>
+                        <button class="chip" data-const="south">Sud</button>
+                    </div>
+                    <div class="cer-wrap">
+                        <canvas id="cerCanvas"></canvas>
+                        <div class="cer-info-box" id="cerInfoBox" style="display:none">
+                            <div class="cib-name" id="cibName"></div>
+                            <div class="cib-desc" id="cibDesc"></div>
+                            <div class="cib-stars" id="cibStars"></div>
+                        </div>
+                    </div>
+                    <div class="cer-legend">
+                        <span><span class="cleg-dot" style="background:#FFD966"></span> Stea principala</span>
+                        <span><span class="cleg-dot" style="background:rgba(124,92,255,.6)"></span> Linie
+                            constelatie</span>
+                        <span><span class="cleg-dot" style="background:#00e5ff"></span> Selectata</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HARTA SISTEM SOLAR -->
+            <div class="page" id="page-harta">
+                <div class="page-card glass harta-card">
+                    <div class="page-hdr">
+                        <div class="page-hdr-icon"><i class="fas fa-circle-nodes"></i></div>
+                        <div>
+                            <h2>Harta Sistemului Solar</h2>
+                            <p>Animatie interactiva — click pe orice planeta pentru detalii</p>
+                        </div>
+                    </div>
+                    <div class="harta-controls">
+                        <label class="harta-speed-lbl">Viteza orbitelor:
+                            <input type="range" id="orbitSpeed" min="0.1" max="5" step="0.1" value="1"
+                                class="speed-slider">
+                        </label>
+                        <button class="chip active" id="pauseOrbit"><i class="fas fa-pause"></i> Pauza</button>
+                    </div>
+                    <canvas id="hartaCanvas"></canvas>
+                    <div class="harta-info" id="hartaInfo" style="display:none">
+                        <button class="harta-close" id="hartaClose"><i class="fas fa-times"></i></button>
+                        <div class="hi-name" id="hiName"></div>
+                        <div class="hi-facts" id="hiFacts"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <button id="backToTop"><i class="fas fa-chevron-up"></i></button>
+    <script src="js/script.js"></script>
+
+    <!-- SCREENSAVER -->
+    <div id="screensaver" style="display:none">
+        <canvas id="ssCanvas"></canvas>
+        <div class="ss-content">
+            <div class="ss-quote" id="ssQuote"></div>
+            <div class="ss-hint">Apasa orice tasta sau click pentru a reveni</div>
+        </div>
+    </div>
+
+</body>
+
+</html>
