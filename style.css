@@ -1,4 +1,4 @@
-/* === EXPLORATORUL UNIVERSULUI versiunea finala(sper) === */
+/* === Versiunea finala(sper, ca mai am de rezolvat partea aia cu harta) === */
 :root {
   --bg: #05091a;
   --bg2: #08112b;
@@ -55,6 +55,21 @@ body {
   transition: background var(--t), color var(--t)
 }
 
+/* Optimizare pentru accesibilitate + performanta pe device-uri sensibile */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important
+  }
+}
+
 ::-webkit-scrollbar {
   width: 5px
 }
@@ -99,7 +114,8 @@ strong {
   position: fixed;
   inset: 0;
   z-index: 0;
-  pointer-events: none
+  pointer-events: none;
+  will-change: transform
 }
 
 .neb {
@@ -185,7 +201,8 @@ body.light .neb {
 #loadCanvas {
   position: absolute;
   inset: 0;
-  z-index: 0
+  z-index: 0;
+  will-change: transform
 }
 
 .loader-content {
@@ -709,45 +726,39 @@ body.light .neb {
   font-size: 1.1rem
 }
 
-.btn-outline {
+.btn-outline,
+.btn-sm {
   background: rgba(255, 255, 255, .06);
-  border: 1px solid var(--bdr2);
-  color: var(--txt);
-  padding: .8rem 2rem;
-  border-radius: 99px;
-  font-size: .95rem;
-  font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: .6rem;
+  border-radius: 99px;
   transition: all var(--t)
 }
 
-.btn-outline:hover {
-  border-color: var(--gold);
-  color: var(--gold)
+.btn-outline {
+  border: 1px solid var(--bdr2);
+  color: var(--txt);
+  padding: .8rem 2rem;
+  font-size: .95rem;
+  font-weight: 500;
+  gap: .6rem
 }
 
-.btn-outline.sm {
+.btn-outline.sm,
+.btn-sm {
   padding: .5rem 1.2rem;
   font-size: .82rem
 }
 
 .btn-sm {
-  background: rgba(255, 255, 255, .06);
   border: 1px solid var(--bdr);
   color: var(--txt2);
-  padding: .5rem 1.2rem;
   border-radius: 99px;
-  font-size: .82rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  transition: all var(--t)
+  gap: .4rem
 }
 
+.btn-outline:hover,
 .btn-sm:hover {
   border-color: var(--gold);
   color: var(--gold)
@@ -1212,9 +1223,6 @@ body.light .neb {
   display: flex;
   align-items: center;
   gap: .9rem;
-  background: var(--srf2);
-  border: 1px solid var(--bdr);
-  border-radius: var(--r);
   padding: .85rem 1.1rem;
   cursor: pointer;
   transition: all var(--t)
@@ -1791,8 +1799,6 @@ body.light .neb {
 }
 
 .sb-card {
-  background: var(--srf2);
-  border: 1px solid var(--bdr);
   border-radius: var(--rl);
   padding: 1.2rem
 }
@@ -1910,9 +1916,6 @@ body.light .neb {
   display: flex;
   align-items: center;
   gap: .9rem;
-  background: var(--srf2);
-  border: 1px solid var(--bdr);
-  border-radius: var(--r);
   padding: .9rem 1.2rem;
   font-size: .88rem;
   transition: all var(--t)
@@ -2106,9 +2109,6 @@ body.light .neb {
 }
 
 .qopt {
-  background: var(--srf2);
-  border: 1px solid var(--bdr);
-  border-radius: var(--r);
   padding: .95rem 1.2rem;
   cursor: pointer;
   transition: all var(--t);
@@ -2682,8 +2682,7 @@ body.light .modal-box {
   background: rgba(235, 240, 255, .97)
 }
 
-body.light .sidebar-card,
-.sb-card {
+body.light .sidebar-card {
   background: var(--srf2)
 }
 
@@ -3092,7 +3091,8 @@ body.mars {
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 100%
+  height: 100%;
+  will-change: transform
 }
 
 .ss-content {
@@ -3142,8 +3142,6 @@ body.mars {
 }
 
 .calc-card {
-  background: var(--srf2);
-  border: 1px solid var(--bdr);
   border-radius: var(--rl);
   padding: 1.5rem;
   display: flex;
@@ -3326,8 +3324,6 @@ body.mars {
 }
 
 .comp-planet-card {
-  background: var(--srf2);
-  border: 1px solid var(--bdr);
   border-radius: var(--rl);
   padding: 1.5rem;
   text-align: center
@@ -3387,6 +3383,21 @@ body.mars {
   flex-direction: column;
   gap: .5rem;
   padding: .5rem 0
+}
+
+.ri,
+.mi,
+.qopt {
+  background: var(--srf2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r)
+}
+
+.sb-card,
+.calc-card,
+.comp-planet-card {
+  background: var(--srf2);
+  border: 1px solid var(--bdr)
 }
 
 .cm-row {

@@ -165,7 +165,14 @@ function updateReadBar() {
   const st = h.scrollTop || b.scrollTop, sh = h.scrollHeight - h.clientHeight;
   rb.style.width = (sh > 0 ? (st / sh) * 100 : 0) + '%';
 }
-window.addEventListener('scroll', updateReadBar, { passive: true });
+
+function debounce(fn, wait) {
+  let t = null;
+  return function (...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
 
 // ===== FAPTE COSMICE =====
 const FACTS = [
@@ -702,6 +709,12 @@ const ACHIEVEMENTS = [
 document.addEventListener('DOMContentLoaded', function () {
 
   document.addEventListener('click', () => { try { initAudio(); } catch (e) { } }, { once: true });
+  const $ = (s, p = document) => p.querySelector(s);
+  const $$ = (s, p = document) => p.querySelectorAll(s);
+  const on = (el, ev, fn, opts) => el && el.addEventListener(ev, fn, opts);
+  const byId = id => document.getElementById(id);
+  const setText = (id, txt) => { const el = byId(id); if (el) el.textContent = txt; };
+  const setDisplay = (id, val) => { const el = byId(id); if (el) el.style.display = val; };
 
   // ── LOADER ──
   (function runLoader() {
@@ -741,13 +754,16 @@ document.addEventListener('DOMContentLoaded', function () {
   if (new Date().getHours() >= 22) state.nightStudy = true;
 
   function saveState() {
-    localStorage.setItem('eu_done', JSON.stringify(state.done));
-    localStorage.setItem('eu_qa', state.attempts);
-    localStorage.setItem('eu_best', state.best);
-    localStorage.setItem('eu_fv', state.factsViewed);
-    localStorage.setItem('eu_min', state.studyMin);
-    localStorage.setItem('eu_ach', JSON.stringify(state.unlocked));
-    localStorage.setItem('eu_theme', state.theme);
+    const map = {
+      eu_done: JSON.stringify(state.done),
+      eu_qa: state.attempts,
+      eu_best: state.best,
+      eu_fv: state.factsViewed,
+      eu_min: state.studyMin,
+      eu_ach: JSON.stringify(state.unlocked),
+      eu_theme: state.theme
+    };
+    Object.entries(map).forEach(([k, v]) => localStorage.setItem(k, v));
   }
 
   // ── TEME ──
@@ -774,6 +790,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ── NAVIGATION ──
   const navBtns = document.querySelectorAll('.nav-btn[data-page]');
+  const allPages = document.querySelectorAll('.page');
+  const lessonsGrid = document.getElementById('lessonsGrid');
+  const recentList = document.getElementById('recentList');
+  const missionList = document.getElementById('missionList');
   let currentPage = 'dashboard';
   let currentLessonId = null;
 
@@ -784,7 +804,7 @@ document.addEventListener('DOMContentLoaded', function () {
       hartaAnimId = null;
       hartaPaused = false;
     }
-    document.querySelectorAll('.page').forEach(p => {
+    allPages.forEach(p => {
       p.classList.remove('active');
       p.style.display = 'none';
     });
@@ -795,14 +815,17 @@ document.addEventListener('DOMContentLoaded', function () {
       currentPage = id;
     }
     navBtns.forEach(b => b.classList.toggle('active', b.dataset.page === id));
-    if (id === 'carte') renderLessonsGrid('all', searchInput ? searchInput.value.trim() : '');
-    if (id === 'misiuni') renderMissions();
-    if (id === 'quiz') resetQuizUI();
-    if (id === 'realizari') renderAchievements();
-    if (id === 'jurnal') renderJurnal();
-    if (id === 'despre') renderDespre();
-    if (id === 'calculator') renderCalculator();
-    if (id === 'comparator') renderComparator();
+    const pageActions = {
+      carte: () => renderLessonsGrid('all', searchInput ? searchInput.value.trim() : ''),
+      misiuni: renderMissions,
+      quiz: resetQuizUI,
+      realizari: renderAchievements,
+      jurnal: renderJurnal,
+      despre: renderDespre,
+      calculator: renderCalculator,
+      comparator: renderComparator,
+      dashboard: updateDashboard
+    };
     if (id === 'cer') {
       renderCer();
       const cerCv = document.getElementById('cerCanvas');
@@ -825,14 +848,12 @@ document.addEventListener('DOMContentLoaded', function () {
       if (pBtn) pBtn.innerHTML = '<i class="fas fa-pause"></i> Pauza';
       renderHarta();
     }
-    if (id === 'dashboard') updateDashboard();
+    (pageActions[id] || (() => { }))();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (kbMod) kbMod.style.display = 'none';
   }
 
-  navBtns.forEach(btn => {
-    btn.addEventListener('click', () => { playClick(); showPage(btn.dataset.page); });
-  });
+  navBtns.forEach(btn => on(btn, 'click', () => { playClick(); showPage(btn.dataset.page); }));
 
   // ── PAGINILE LECȚIILOR ──
   const lessonPagesWrap = document.getElementById('lessonPagesWrap');
@@ -845,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   function showLesson(id) {
-    document.querySelectorAll('.page').forEach(p => {
+    allPages.forEach(p => {
       p.classList.remove('active');
       p.style.display = 'none';
     });
@@ -1083,12 +1104,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function renderFact(i) {
     const f = FACTS[i];
-    const fc = document.getElementById('factCounter');
-    const fi = document.getElementById('factIconEl');
-    const ft = document.getElementById('factText');
-    if (fc) fc.textContent = (i + 1) + ' / ' + FACTS.length;
+    const fi = byId('factIconEl');
+    setText('factCounter', (i + 1) + ' / ' + FACTS.length);
     if (fi) fi.innerHTML = '<i class="fas ' + f.icon + '"></i>';
-    if (ft) ft.textContent = f.text;
+    setText('factText', f.text);
     // TINE MINTE FAPTUL ZILEI
     if (i >= state.factsViewed) {
       state.factsViewed = i + 1;
@@ -1098,15 +1117,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const prevFact = document.getElementById('prevFact');
   const nextFact = document.getElementById('nextFact');
-  if (prevFact) prevFact.addEventListener('click', () => {
+  on(prevFact, 'click', () => {
     playClick(); factIdx = (factIdx - 1 + FACTS.length) % FACTS.length; renderFact(factIdx);
   });
-  if (nextFact) nextFact.addEventListener('click', () => {
+  on(nextFact, 'click', () => {
     playClick(); factIdx = (factIdx + 1) % FACTS.length; renderFact(factIdx);
   });
 
   function renderRecent() {
-    const el = document.getElementById('recentList');
+    const el = recentList;
     if (!el) return;
     const items = state.done.length > 0
       ? state.done.slice(-6).reverse().map(id => {
@@ -1124,19 +1143,16 @@ document.addEventListener('DOMContentLoaded', function () {
             <span class="ri-status" style="color:var(--txt2)">&#9711;</span>
           </div>`).join('');
     el.innerHTML = items;
-    el.querySelectorAll('.ri').forEach(r => {
-      r.addEventListener('click', () => { playClick(); showLesson(parseInt(r.dataset.lid)); });
-    });
   }
 
   const contBtn = document.getElementById('continueBtn');
   const quikBtn = document.getElementById('quizQuickBtn');
   const goMiss = document.getElementById('goMissions');
-  if (contBtn) contBtn.addEventListener('click', () => { playClick(); showPage('carte'); });
-  if (quikBtn) quikBtn.addEventListener('click', () => { playClick(); showPage('quiz'); });
-  if (goMiss) goMiss.addEventListener('click', () => { playClick(); showPage('misiuni'); });
+  on(contBtn, 'click', () => { playClick(); showPage('carte'); });
+  on(quikBtn, 'click', () => { playClick(); showPage('quiz'); });
+  on(goMiss, 'click', () => { playClick(); showPage('misiuni'); });
   const rndBtn = document.getElementById('randomLessonBtn');
-  if (rndBtn) rndBtn.addEventListener('click', () => {
+  on(rndBtn, 'click', () => {
     playClick();
     const unread = LESSONS.filter(l => !state.done.includes(l.id));
     const pool = unread.length > 0 ? unread : LESSONS;
@@ -1149,23 +1165,25 @@ document.addEventListener('DOMContentLoaded', function () {
   let activeFilter = 'all';
   function renderLessonsGrid(filter, search) {
     activeFilter = filter || activeFilter;
-    const grid = document.getElementById('lessonsGrid');
+    const grid = lessonsGrid;
     const cDone = document.getElementById('cDone');
     const cTodo = document.getElementById('cTodo');
     if (!grid) return;
     const doneCnt = state.done.length;
+    const doneSet = new Set(state.done);
+    const searchLower = search ? search.toLowerCase() : '';
     if (cDone) cDone.textContent = doneCnt;
     if (cTodo) cTodo.textContent = (12 - doneCnt);
 
     let items = LESSONS.filter(l => {
-      if (activeFilter === 'done' && !state.done.includes(l.id)) return false;
-      if (activeFilter === 'todo' && state.done.includes(l.id)) return false;
+      const isDone = doneSet.has(l.id);
+      if (activeFilter === 'done' && !isDone) return false;
+      if (activeFilter === 'todo' && isDone) return false;
       if (activeFilter === 'easy' && l.diff !== 'easy') return false;
       if (activeFilter === 'med' && l.diff !== 'med') return false;
       if (activeFilter === 'hard' && l.diff !== 'hard') return false;
-      if (search) {
-        const s = search.toLowerCase();
-        if (!l.title.toLowerCase().includes(s) && !l.desc.toLowerCase().includes(s)) return false;
+      if (searchLower) {
+        if (!l.title.toLowerCase().includes(searchLower) && !l.desc.toLowerCase().includes(searchLower)) return false;
       }
       return true;
     });
@@ -1175,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     grid.innerHTML = items.map((l, i) => {
-      const done = state.done.includes(l.id);
+      const done = doneSet.has(l.id);
       const diffLabel = l.diff === 'easy' ? 'Incepator' : l.diff === 'med' ? 'Intermediar' : 'Avansat';
       const diffCls = 't-' + l.diff;
       const prog = done ? 100 : 0;
@@ -1195,16 +1213,13 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="lcard-bar"><div class="lcard-bar-fill" style="width:${prog}%"></div></div>
       </div>`;
     }).join('');
-
-    grid.querySelectorAll('.lcard').forEach(el => {
-      el.addEventListener('click', () => { playClick(); showLesson(parseInt(el.dataset.lid)); });
-    });
   }
 
   // Filtrele alea de sus
-  document.querySelectorAll('.chip[data-f]').forEach(chip => {
+  const lessonFilterChips = document.querySelectorAll('.chip[data-f]');
+  lessonFilterChips.forEach(chip => {
     chip.addEventListener('click', function () {
-      document.querySelectorAll('.chip[data-f]').forEach(c => c.classList.remove('active'));
+      lessonFilterChips.forEach(c => c.classList.remove('active'));
       this.classList.add('active');
       playClick();
       renderLessonsGrid(this.dataset.f, document.getElementById('searchInput')?.value || '');
@@ -1215,41 +1230,80 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderMissions() {
     const fill = document.getElementById('mbarFill');
     const label = document.getElementById('mbarLabel');
-    const list = document.getElementById('missionList');
+    const list = missionList;
     const done = state.done.length, total = LESSONS.length;
     if (fill) fill.style.width = (done / total * 100) + '%';
     if (label) label.textContent = done + ' / ' + total + ' completate';
     if (!list) return;
+    const doneSet = new Set(state.done);
     list.innerHTML = LESSONS.map(l => {
-      const ok = state.done.includes(l.id);
+      const ok = doneSet.has(l.id);
       return `<li class="mi ${ok ? 'done' : ''}" data-lid="${l.id}" style="cursor:pointer">
         <i class="fas fa-${ok ? 'check-circle' : 'circle'}"></i>
         <span>Finalizeaza: ${l.title}</span>
         <span style="margin-left:auto;font-size:.78rem;color:var(--txt2)">${l.readTime} min</span>
       </li>`;
     }).join('');
-    list.querySelectorAll('.mi').forEach(mi => {
-      mi.addEventListener('click', () => { playClick(); showLesson(parseInt(mi.dataset.lid)); });
-    });
   }
 
   // ── QUIZ ──
   let quizQs = [], qIdx = 0, qScore = 0, qActive = false, qAnswered = false;
   let qTimer = null, qTimeLeft = 30, qHistory = [];
+  const qaOptionsEl = document.getElementById('qaOptions');
+
+  function lockQuizOptions() {
+    if (!qaOptionsEl) return;
+    qaOptionsEl.querySelectorAll('.qopt').forEach(o => o.classList.add('locked'));
+  }
+
+  function submitQuizAnswer(sel) {
+    if (qAnswered || !qActive || !quizQs[qIdx]) return;
+    qAnswered = true;
+    clearInterval(qTimer);
+    lockQuizOptions();
+
+    const q = quizQs[qIdx];
+    const qf = document.getElementById('qaFeedback');
+    const qe = document.getElementById('qaExplain');
+    const nb = document.getElementById('nextQBtn');
+    const selectedEl = qaOptionsEl ? qaOptionsEl.querySelector(`.qopt[data-i="${sel}"]`) : null;
+    const correctEl = qaOptionsEl ? qaOptionsEl.querySelector(`.qopt[data-i="${q.c}"]`) : null;
+
+    if (sel === q.c) {
+      if (selectedEl) selectedEl.classList.add('correct');
+      if (qf) { qf.textContent = '✅ Corect! Bine jucat!'; qf.style.color = 'var(--green)'; }
+      qScore++;
+      playSuccess();
+    } else {
+      if (selectedEl) selectedEl.classList.add('wrong');
+      if (correctEl) correctEl.classList.add('correct');
+      if (qf) { qf.textContent = '❌ Gresit. Raspuns corect: ' + q.opts[q.c]; qf.style.color = 'var(--red)'; }
+      playError();
+    }
+
+    if (qe && q.exp) { qe.textContent = '💡 ' + q.exp; qe.classList.add('show'); }
+    qHistory.push({ q: q.q, opts: q.opts, correct: q.c, selected: sel });
+    if (qIdx === 9) setTimeout(finishQuiz, 1600);
+    else if (nb) nb.style.display = 'flex';
+  }
+
+  if (qaOptionsEl) {
+    qaOptionsEl.addEventListener('click', e => {
+      const option = e.target.closest('.qopt');
+      if (!option) return;
+      playClick();
+      submitQuizAnswer(parseInt(option.dataset.i, 10));
+    });
+  }
 
   function resetQuizUI() {
-    const intro = document.getElementById('quizIntro');
-    const active = document.getElementById('quizActive');
-    const result = document.getElementById('quizResult');
-    const review = document.getElementById('quizReview');
-    if (intro) { intro.style.display = 'block'; }
-    if (active) { active.style.display = 'none'; }
-    if (result) { result.style.display = 'none'; }
-    if (review) { review.style.display = 'none'; }
-    const prev = document.getElementById('quizPrevScore');
-    if (prev) prev.textContent = state.attempts > 0
+    setDisplay('quizIntro', 'block');
+    setDisplay('quizActive', 'none');
+    setDisplay('quizResult', 'none');
+    setDisplay('quizReview', 'none');
+    setText('quizPrevScore', state.attempts > 0
       ? 'Ultimul scor: ' + state.best + '% | ' + state.attempts + ' incercari'
-      : 'Nicio incercare inca. Esti gata?';
+      : 'Nicio incercare inca. Esti gata?');
     qActive = false;
     if (qTimer) clearInterval(qTimer);
   }
@@ -1273,10 +1327,8 @@ document.addEventListener('DOMContentLoaded', function () {
     playTone(660, .1, .07);
     quizQs = shuffle([...QUIZ_Q]).slice(0, 10).map(shuffleQ);
     qIdx = 0; qScore = 0; qActive = true; qAnswered = false; qHistory = [];
-    const intro = document.getElementById('quizIntro');
-    const active = document.getElementById('quizActive');
-    if (intro) intro.style.display = 'none';
-    if (active) active.style.display = 'block';
+    setDisplay('quizIntro', 'none');
+    setDisplay('quizActive', 'block');
     displayQ();
   }
 
@@ -1294,7 +1346,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (qt) qt.textContent = '30';
     if (qtw) qtw.classList.remove('urgent');
     const qq = document.getElementById('qaQuestion');
-    const qo = document.getElementById('qaOptions');
+    const qo = qaOptionsEl;
     const qf = document.getElementById('qaFeedback');
     const qe = document.getElementById('qaExplain');
     if (qq) qq.textContent = q.q;
@@ -1304,36 +1356,6 @@ document.addEventListener('DOMContentLoaded', function () {
       qo.innerHTML = q.opts.map((opt, i) =>
         `<div class="qopt" data-i="${i}">${opt}</div>`
       ).join('');
-      qo.querySelectorAll('.qopt').forEach(el => {
-        el.addEventListener('click', function () {
-          if (qAnswered || !qActive) return;
-          playClick();
-          qAnswered = true;
-          clearInterval(qTimer);
-          const sel = parseInt(this.dataset.i);
-          qo.querySelectorAll('.qopt').forEach(o => o.classList.add('locked'));
-          const nb = document.getElementById('nextQBtn');
-          if (sel === q.c) {
-            this.classList.add('correct');
-            if (qf) { qf.textContent = '\u2705 Corect! Bine jucat!'; qf.style.color = 'var(--green)'; }
-            qScore++;
-            playSuccess();
-          } else {
-            this.classList.add('wrong');
-            const correctEl = qo.querySelector(`.qopt[data-i="${q.c}"]`);
-            if (correctEl) correctEl.classList.add('correct');
-            if (qf) { qf.textContent = '\u274C Gresit. Raspuns corect: ' + q.opts[q.c]; qf.style.color = 'var(--red)'; }
-            playError();
-          }
-          if (qe && q.exp) { qe.textContent = '\uD83D\uDCA1 ' + q.exp; qe.classList.add('show'); }
-          qHistory.push({ q: q.q, opts: q.opts, correct: q.c, selected: sel });
-          if (qIdx === 9) {
-            setTimeout(finishQuiz, 1600);
-          } else {
-            if (nb) nb.style.display = 'flex';
-          }
-        });
-      });
     }
     const nb = document.getElementById('nextQBtn');
     if (nb) nb.style.display = 'none';
@@ -1357,10 +1379,9 @@ document.addEventListener('DOMContentLoaded', function () {
         clearInterval(qTimer);
         if (!qAnswered) {
           qAnswered = true;
-          const qo = document.getElementById('qaOptions');
-          if (qo) {
-            qo.querySelectorAll('.qopt').forEach(o => o.classList.add('locked'));
-            const correctEl = qo.querySelector(`.qopt[data-i="${quizQs[qIdx].c}"]`);
+          if (qaOptionsEl) {
+            lockQuizOptions();
+            const correctEl = qaOptionsEl.querySelector(`.qopt[data-i="${quizQs[qIdx].c}"]`);
             if (correctEl) correctEl.classList.add('correct');
           }
           const qf = document.getElementById('qaFeedback');
@@ -1380,21 +1401,18 @@ document.addEventListener('DOMContentLoaded', function () {
   function finishQuiz() {
     qActive = false;
     clearInterval(qTimer);
-    const active = document.getElementById('quizActive');
-    const result = document.getElementById('quizResult');
-    if (active) active.style.display = 'none';
-    if (result) result.style.display = 'block';
+    setDisplay('quizActive', 'none');
+    setDisplay('quizResult', 'block');
     state.attempts++;
     const pct = qScore * 10;
     if (pct > state.best) state.best = pct;
     saveState();
 
-    const badge = document.getElementById('qrBadge');
-    const title = document.getElementById('qrTitle');
-    const sub = document.getElementById('qrSub');
-    const pts = document.getElementById('qrPts');
-    const brk = document.getElementById('qrBreakdown');
-    if (pts) pts.textContent = pct;
+    const badge = byId('qrBadge');
+    const title = byId('qrTitle');
+    const sub = byId('qrSub');
+    const brk = byId('qrBreakdown');
+    setText('qrPts', pct);
 
     if (qScore === 10) {
       if (badge) badge.textContent = '\uD83C\uDFC5';
@@ -1426,16 +1444,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const retryBtn = document.getElementById('retryBtn');
   const reviewBtn = document.getElementById('reviewBtn');
   const backRes = document.getElementById('backToResult');
-  if (startBtn) startBtn.addEventListener('click', startQuiz);
-  if (nextBtn) nextBtn.addEventListener('click', () => { playClick(); qIdx++; displayQ(); });
-  if (retryBtn) retryBtn.addEventListener('click', () => { playClick(); resetQuizUI(); setTimeout(startQuiz, 100); });
-  if (reviewBtn) reviewBtn.addEventListener('click', () => {
+  on(startBtn, 'click', startQuiz);
+  on(nextBtn, 'click', () => { playClick(); qIdx++; displayQ(); });
+  on(retryBtn, 'click', () => { playClick(); resetQuizUI(); setTimeout(startQuiz, 100); });
+  on(reviewBtn, 'click', () => {
     playClick();
-    const res = document.getElementById('quizResult');
-    const rev = document.getElementById('quizReview');
-    const rl = document.getElementById('reviewList');
-    if (res) res.style.display = 'none';
-    if (rev) rev.style.display = 'block';
+    const rl = byId('reviewList');
+    setDisplay('quizResult', 'none');
+    setDisplay('quizReview', 'block');
     if (rl) rl.innerHTML = qHistory.map((h, i) => {
       const ok = h.selected === h.correct;
       return `<div class="review-item">
@@ -1447,12 +1463,10 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>`;
     }).join('');
   });
-  if (backRes) backRes.addEventListener('click', () => {
+  on(backRes, 'click', () => {
     playClick();
-    const res = document.getElementById('quizResult');
-    const rev = document.getElementById('quizReview');
-    if (res) res.style.display = 'block';
-    if (rev) rev.style.display = 'none';
+    setDisplay('quizResult', 'block');
+    setDisplay('quizReview', 'none');
   });
 
   // ── JURNAL ──
@@ -1498,10 +1512,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const el = id => document.getElementById(id);
     const dn = el('despreNume');
     if (dn && !dn._typed) { typewriter(dn, DESPRE_INFO.elev + ' — Exploratorul Universului', 35); dn._typed = true; }
-    if (el('di-elev')) el('di-elev').textContent = DESPRE_INFO.elev;
-    if (el('di-clasa')) el('di-clasa').textContent = DESPRE_INFO.clasa;
-    if (el('di-scoala')) el('di-scoala').textContent = DESPRE_INFO.scoala;
-    if (el('di-prof')) el('di-prof').textContent = DESPRE_INFO.prof;
+    const map = {
+      'di-elev': DESPRE_INFO.elev,
+      'di-clasa': DESPRE_INFO.clasa,
+      'di-scoala': DESPRE_INFO.scoala,
+      'di-prof': DESPRE_INFO.prof
+    };
+    Object.entries(map).forEach(([id, value]) => { const node = el(id); if (node) node.textContent = value; });
   }
 
   // ── SEARCH (bara de cautare din header) ──
@@ -1512,23 +1529,41 @@ document.addEventListener('DOMContentLoaded', function () {
     if (currentPage !== 'carte') showPage('carte');
     renderLessonsGrid('all', val);
   }
-  if (searchBtn) searchBtn.addEventListener('click', () => { playClick(); doSearch(); });
+  on(searchBtn, 'click', () => { playClick(); doSearch(); });
   if (searchInput) {
-    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
-    searchInput.addEventListener('input', () => {
+    on(searchInput, 'keydown', e => { if (e.key === 'Enter') doSearch(); });
+    const debouncedSearch = debounce(() => {
       if (currentPage === 'carte') {
         renderLessonsGrid(activeFilter, searchInput.value.trim());
       }
-    });
+    }, 120);
+    on(searchInput, 'input', debouncedSearch);
   }
 
   // ── BUTON INAPOI SUS ──
   const btt = document.getElementById('backToTop');
-  window.addEventListener('scroll', () => {
+  let scrollFramePending = false;
+  function handleScrollUI() {
+    scrollFramePending = false;
     if (btt) btt.style.display = window.scrollY > 300 ? 'flex' : 'none';
     updateReadBar();
+  }
+  window.addEventListener('scroll', () => {
+    if (scrollFramePending) return;
+    scrollFramePending = true;
+    requestAnimationFrame(handleScrollUI);
   }, { passive: true });
-  if (btt) btt.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); playClick(); });
+  on(btt, 'click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); playClick(); });
+
+  const bindLessonNav = (root, sel) => on(root, 'click', e => {
+    const item = e.target.closest(sel);
+    if (!item) return;
+    playClick();
+    showLesson(parseInt(item.dataset.lid, 10));
+  });
+  bindLessonNav(lessonsGrid, '.lcard');
+  bindLessonNav(recentList, '.ri');
+  bindLessonNav(missionList, '.mi');
 
   // ── SCURTĂTURI (Tastatura) ──
   document.addEventListener('keydown', e => {
@@ -1537,35 +1572,27 @@ document.addEventListener('DOMContentLoaded', function () {
       if (e.key === 'Escape') kbMod.style.display = 'none';
       return;
     }
-    switch (e.key.toUpperCase()) {
-      case 'D': playClick(); showPage('dashboard'); break;
-      case 'L': playClick(); showPage('carte'); break;
-      case 'Q': playClick(); showPage('quiz'); break;
-      case 'T':
-        playClick();
+    const key = e.key.toUpperCase();
+    const keyActions = {
+      D: () => showPage('dashboard'),
+      L: () => showPage('carte'),
+      Q: () => showPage('quiz'),
+      T: () => {
         applyTheme(THEMES[(THEMES.indexOf(state.theme) + 1) % THEMES.length]);
         toast('Tema: ' + themeNames[state.theme], 'info', 1800);
-        break;
-      case 'S': playClick(); soundOn = !soundOn; break;
-      case 'F':
-        playClick();
+      },
+      S: () => { soundOn = !soundOn; },
+      F: () => {
         factIdx = (factIdx + 1) % FACTS.length;
         renderFact(factIdx);
-        toast('\uD83D\uDCA1 Fapt nou!', 'info', 2000); break;
-      case '?':
-        playClick();
-        if (kbMod) kbMod.style.display = 'flex';
-        break;
-      case 'ESCAPE':
-        if (currentLessonId) { playClick(); showPage('carte'); currentLessonId = null; }
-        break;
-      case 'ARROWLEFT':
-        if (currentLessonId && currentLessonId > 1) { playClick(); showLesson(currentLessonId - 1); }
-        break;
-      case 'ARROWRIGHT':
-        if (currentLessonId && currentLessonId < 12) { playClick(); showLesson(currentLessonId + 1); }
-        break;
-    }
+        toast('\uD83D\uDCA1 Fapt nou!', 'info', 2000);
+      },
+      '?': () => { if (kbMod) kbMod.style.display = 'flex'; },
+      ESCAPE: () => { if (currentLessonId) { showPage('carte'); currentLessonId = null; } },
+      ARROWLEFT: () => { if (currentLessonId && currentLessonId > 1) showLesson(currentLessonId - 1); },
+      ARROWRIGHT: () => { if (currentLessonId && currentLessonId < 12) showLesson(currentLessonId + 1); }
+    };
+    if (keyActions[key]) { playClick(); keyActions[key](); }
   });
 
   // ── TRACK TIMPUL PETRECUT ──
@@ -1598,10 +1625,9 @@ document.addEventListener('DOMContentLoaded', function () {
     THEMES.forEach(th => document.body.classList.remove(th));
     if (t !== 'dark') document.body.classList.add(t);
     // Light theme e special, asa ca e separat!
-    if (t === 'light') document.body.classList.add('light');
-    else document.body.classList.remove('light');
+    document.body.classList.toggle('light', t === 'light');
     state.theme = t;
-    document.querySelectorAll('.tpick').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
+    $$('.tpick').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
     const tBtn = document.getElementById('themeBtn');
     const icons = { dark: 'fa-moon', light: 'fa-sun', nebula: 'fa-star', aurora: 'fa-leaf', mars: 'fa-circle' };
     if (tBtn) tBtn.innerHTML = '<i class="fas ' + (icons[t] || 'fa-moon') + '"></i>';
@@ -1610,15 +1636,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const colors = { dark: '#05091a', light: '#e8edf8', nebula: '#0d0520', aurora: '#051a0d', mars: '#1a0800' };
     if (mc) mc.content = colors[t] || '#05091a';
     saveState();
-    localStorage.setItem('eu_theme', t);
   }
 
   // Aplică tema salvată
   applyTheme(localStorage.getItem('eu_theme') || 'dark');
 
-  document.querySelectorAll('.tpick').forEach(btn => {
-    btn.addEventListener('click', () => { playClick(); applyTheme(btn.dataset.theme); });
-  });
+  $$('.tpick').forEach(btn => on(btn, 'click', () => { playClick(); applyTheme(btn.dataset.theme); }));
 
   // Inlocuiește vechiul buton de temă pentru a cicla temele
   if (themeBtn) {
@@ -1710,10 +1733,16 @@ document.addEventListener('DOMContentLoaded', function () {
     ssTimeout = setTimeout(startScreensaver, SS_DELAY);
   }
 
+  let ssResetDebounce = null;
+  function queueSsTimerReset() {
+    clearTimeout(ssResetDebounce);
+    ssResetDebounce = setTimeout(resetSsTimer, 150);
+  }
+
   document.getElementById('screensaver')?.addEventListener('click', stopScreensaver);
   document.addEventListener('keydown', e => { if (ssActive) { stopScreensaver(); return; } });
   ['mousemove', 'mousedown', 'touchstart', 'scroll'].forEach(ev => {
-    document.addEventListener(ev, resetSsTimer, { passive: true });
+    document.addEventListener(ev, queueSsTimerReset, { passive: true });
   });
   resetSsTimer();
 
@@ -1844,24 +1873,27 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
       </div>`).join('');
 
-    grid.querySelectorAll('.calc-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        playClick();
-        const i = parseInt(btn.dataset.ci);
-        const val = parseFloat(document.getElementById('ci' + i).value);
-        if (isNaN(val)) return;
-        const res = CALCS[i].calc(val);
-        const rm = document.getElementById('crm' + i);
-        const rs = document.getElementById('crs' + i);
-        const rc = document.getElementById('cr' + i);
-        if (rm) rm.textContent = res.main;
-        if (rs) rs.innerHTML = res.sub;
-        if (rc) rc.classList.add('show');
-        playSuccess();
-      });
-      // also on Enter
-      const inp = btn.parentElement.querySelector('.calc-input');
-      if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+    const runCalc = i => {
+      playClick();
+      const val = parseFloat(byId('ci' + i).value);
+      if (isNaN(val)) return;
+      const res = CALCS[i].calc(val);
+      const rm = byId('crm' + i), rs = byId('crs' + i), rc = byId('cr' + i);
+      if (rm) rm.textContent = res.main;
+      if (rs) rs.innerHTML = res.sub;
+      if (rc) rc.classList.add('show');
+      playSuccess();
+    };
+    on(grid, 'click', e => {
+      const btn = e.target.closest('.calc-btn');
+      if (!btn) return;
+      runCalc(parseInt(btn.dataset.ci, 10));
+    });
+    on(grid, 'keydown', e => {
+      if (e.key !== 'Enter' || !e.target.classList.contains('calc-input')) return;
+      const btn = e.target.parentElement && e.target.parentElement.querySelector('.calc-btn');
+      if (!btn) return;
+      runCalc(parseInt(btn.dataset.ci, 10));
     });
   }
 
@@ -1920,14 +1952,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const opts = PLANETS_DATA.map((p, i) => `<option value="${i}">${p.icon} ${p.name}</option>`).join('');
     s1.innerHTML = opts; s2.innerHTML = opts;
     s1.value = '2'; s2.value = '3'; // Pamant vs Marte default
+    const makeRows = (planet, keys) => keys.map(k =>
+      `<div class="cpc-row"><span class="cpc-lbl">${STAT_LABELS[k]}</span><span class="cpc-val">${planet.stats[k] || '-'}</span></div>`
+    ).join('');
     function update() {
       const p1 = PLANETS_DATA[parseInt(s1.value)];
       const p2 = PLANETS_DATA[parseInt(s2.value)];
       const res = document.getElementById('compResult');
       if (!res) return;
       const keys = Object.keys(STAT_LABELS);
-      const p1rows = keys.map(k => `<div class="cpc-row"><span class="cpc-lbl">${STAT_LABELS[k]}</span><span class="cpc-val">${p1.stats[k] || '-'}</span></div>`).join('');
-      const p2rows = keys.map(k => `<div class="cpc-row"><span class="cpc-lbl">${STAT_LABELS[k]}</span><span class="cpc-val">${p2.stats[k] || '-'}</span></div>`).join('');
+      const p1rows = makeRows(p1, keys);
+      const p2rows = makeRows(p2, keys);
       const labels = keys.map(k => `<div class="cm-row">${STAT_LABELS[k]}</div>`).join('');
       res.innerHTML = `<div class="comp-result-grid">
         <div class="comp-planet-card">
@@ -1963,7 +1998,7 @@ document.addEventListener('DOMContentLoaded', function () {
     { name: 'Gemini', type: 'zodiac', stars: [[280, 150], [260, 180], [240, 210], [310, 160], [290, 190], [270, 220]], lines: [[0, 1], [1, 2], [3, 4], [4, 5], [0, 3], [1, 4], [2, 5]], mainStar: 0, desc: 'Gemenii - Castor si Pollux. Castor este de fapt un sistem cu 6 stele. Vizibili iarna.', bright: 'Pollux, Castor, Alhena' },
   ];
 
-  let cerFilter = 'all', cerSelected = null, cerAnimId = null;
+  let cerFilter = 'all', cerSelected = null;
 
   function renderCer() {
     const cv = document.getElementById('cerCanvas');
@@ -2066,48 +2101,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ══════════════════════════════════════════════════
   // HARTA SISTEM SOLAR
   // ══════════════════════════════════════════════════
-  const SOLAR_PLANETS = [
-    {
-      name: 'Soare', r: 28, color: '#FFD966', glow: '#ff8800', orbit: 0, period: 0, icon: '\u2600\uFE0F',
-      facts: { Tip: 'Stea G2V', Diametru: '1,392,700 km', Masa: '1.99×10³⁰ kg', Temperatura: '5,500°C supraf.', Compozitie: '75% H, 25% He' }
-    },
-    {
-      name: 'Mercur', r: 4, color: '#aaa', glow: '#888', orbit: 60, period: 4.1, icon: '\u263F',
-      facts: { Diametru: '4,879 km', Orbita: '87.97 zile', Temp: '-180/+430°C', Luni: '0', Atm: 'Inexistenta' }
-    },
-    {
-      name: 'Venus', r: 6, color: '#e8c060', glow: '#ffaa00', orbit: 90, period: 10.7, icon: '\u2640',
-      facts: { Diametru: '12,104 km', Orbita: '224.7 zile', Temp: '+470°C', Luni: '0', Atm: 'CO₂ (92 atm)' }
-    },
-    {
-      name: 'Pamant', r: 7, color: '#4b8dd9', glow: '#0066ff', orbit: 125, period: 17.6, icon: '\uD83C\uDF0D',
-      facts: { Diametru: '12,742 km', Orbita: '365.25 zile', Temp: '-88/+58°C', Luni: '1', Atm: 'N₂+O₂' }
-    },
-    {
-      name: 'Marte', r: 5, color: '#c1440e', glow: '#ff4400', orbit: 165, period: 33.1, icon: '\u2642',
-      facts: { Diametru: '6,779 km', Orbita: '686.97 zile', Temp: '-125/+20°C', Luni: '2', Atm: 'CO₂ slab' }
-    },
-    {
-      name: 'Jupiter', r: 18, color: '#c88b3a', glow: '#ff8844', orbit: 225, period: 55.7, icon: '\u2643',
-      facts: { Diametru: '142,984 km', Orbita: '11.86 ani', Temp: '-110°C nori', Luni: '95', Atm: 'H₂+He' }
-    },
-    {
-      name: 'Saturn', r: 15, color: '#e8d5a3', glow: '#ddaa66', orbit: 290, period: 92.1, icon: '\u2644',
-      facts: { Diametru: '120,536 km', Orbita: '29.46 ani', Temp: '-140°C', Luni: '146', Atm: 'H₂+He+inele' }
-    },
-    {
-      name: 'Uranus', r: 10, color: '#7de8e8', glow: '#00cccc', orbit: 345, period: 262, icon: '\u2645',
-      facts: { Diametru: '51,118 km', Orbita: '84.01 ani', Temp: '-195°C', Luni: '28', Atm: 'H₂+He+CH₄' }
-    },
-    {
-      name: 'Neptun', r: 9, color: '#5b7fde', glow: '#3355cc', orbit: 395, period: 515, icon: '\u2646',
-      facts: { Diametru: '49,244 km', Orbita: '164.8 ani', Temp: '-200°C', Luni: '16', Vant: '2100 km/h' }
-    }
-  ];
-
   let hartaAnimId = null, hartaPaused = false, hartaAngle = 0, hartaSpeed = 1;
-  let hartaSelected = null;
-  let hartaLoopFn = null;
 
   function renderHarta() {
     const cv = document.getElementById('hartaCanvas');
@@ -2118,9 +2112,7 @@ document.addEventListener('DOMContentLoaded', function () {
     cv.width = 900;
     cv.height = 550;
     cv._bg = null;
-    cv._listenersAdded = false;
     hartaAngle = 0;
-    hartaSelected = null;
 
     const ctx = cv.getContext('2d');
     const cx = cv.width / 2;
@@ -2148,6 +2140,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ];
 
     const ORBITS = [0, 60, 90, 125, 165, 230, 290, 345, 390];
+    cv._planetState = PLANETS_DATA;
 
     if (!cv._listenersAdded) {
       cv._listenersAdded = true;
@@ -2159,25 +2152,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const mx = (e.clientX - rect.left) * scaleX;
         const my = (e.clientY - rect.top) * scaleY;
         
-        console.log('Click at:', mx, my);
-        
         let hit = null;
         let minDist = 40;
-        PLANETS_DATA.forEach((p, i) => {
+        const planets = cv._planetState || PLANETS_DATA;
+        planets.forEach((p, i) => {
           const px = p._x || 0;
           const py = p._y || 0;
           const d = Math.hypot(mx - px, my - py);
-          console.log(p.name, 'at', px, py, 'dist:', d, 'radius:', p.r + 20);
           if (d < p.r + 25 && d < minDist) { 
             minDist = d; 
             hit = i; 
           }
         });
-        
-        console.log('Hit:', hit);
-        
         if (hit !== null) {
-          const p = PLANETS_DATA[hit];
+          const p = planets[hit];
           const info = document.getElementById('hartaInfo');
           if (info) {
             document.getElementById('hiName').textContent = '☀️ ' + p.name;
@@ -2202,7 +2190,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const my = (e.clientY - rect.top) * scaleY;
         
         let hit = false;
-        PLANETS_DATA.forEach((p) => {
+        const planets = cv._planetState || PLANETS_DATA;
+        planets.forEach((p) => {
           const px = p._x || 0;
           const py = p._y || 0;
           const d = Math.hypot(mx - px, my - py);
@@ -2320,9 +2309,3 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 }); // END DOMContentLoaded
-// PWA Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => { });
-  });
-}
